@@ -102,7 +102,7 @@ def generate_article_idea(request: HttpRequest) -> JsonResponse:
 
 
 async def get_current_market_state(request: HttpRequest):
-    url = "https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=USD&to_currency=JPY&apikey=XSN17SDSA5RAM5W2"
+    url = "https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=USD&to_currency=JPY&apikey=WQXS8S9M44M1B1BO"
     async with httpx.AsyncClient() as client:
         response: httpx.Response = await client.get(url)
     rate: str = response.json()["Realtime Currency Exchange Rate"][
@@ -111,9 +111,27 @@ async def get_current_market_state(request: HttpRequest):
     return JsonResponse({"rate": rate})
 
 
+async def get_exchange_rate(request: HttpRequest) -> HttpResponse:
+    post_data = request.POST.copy()
+    source = post_data.get("source")
+    destination = post_data.get("destination")
+
+    url = f"https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency={source}&to_currency={destination}&apikey=WQXS8S9M44M1B1BO"
+
+    async with httpx.AsyncClient() as client:
+        response: httpx.Response = await client.get(url)
+    rate: str = response.json()["Realtime Currency Exchange Rate"][
+        "5. Exchange Rate"
+    ]
+
+    result = f"The exchange rate for {source} and {destination} is {rate}."
+    return JsonResponse(result)
+
+
 urlpatterns = [
     # path("admin/", admin.site.urls),
     # передается не функция, а ее объект. Django сам ее вызовет,когда мы перейдем по ссылке.   #noqa
     path(route="generate-article", view=generate_article_idea),
     path(route="market", view=get_current_market_state),
+    path(route="exchange-rate", view=get_exchange_rate),
 ]
