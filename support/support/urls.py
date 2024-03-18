@@ -1,3 +1,4 @@
+import json
 import random
 import string
 from typing import Callable
@@ -10,6 +11,7 @@ from django.urls import path
 create_random_string: Callable[[int], str] = lambda size: "".join(  # noqa
     [random.choice(string.ascii_letters) for i in range(size)]  # noqa
 )  # noqa
+
 
 # content = """
 # <!DOCTYPE html>
@@ -102,7 +104,7 @@ def generate_article_idea(request: HttpRequest) -> JsonResponse:
 
 
 async def get_current_market_state(request: HttpRequest):
-    url = "https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=USD&to_currency=JPY&apikey=WQXS8S9M44M1B1BO"
+    url = "https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=USD&to_currency=JPY&apikey=H7CYK4OLE6Z4MEN0"
     async with httpx.AsyncClient() as client:
         response: httpx.Response = await client.get(url)
     rate: str = response.json()["Realtime Currency Exchange Rate"][
@@ -112,20 +114,20 @@ async def get_current_market_state(request: HttpRequest):
 
 
 async def get_exchange_rate(request: HttpRequest) -> HttpResponse:
-    post_data = request.POST.copy()
+    post_data = json.loads(request.body)
     source = post_data.get("source")
     destination = post_data.get("destination")
 
-    url = f"https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency={source}&to_currency={destination}&apikey=WQXS8S9M44M1B1BO"
+    url = f"https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency={source}&to_currency={destination}&apikey=H7CYK4OLE6Z4MEN0"
 
     async with httpx.AsyncClient() as client:
-        response: httpx.Response = await client.get(url)
+        response: httpx.Response = await client.get(url=url)
     rate: str = response.json()["Realtime Currency Exchange Rate"][
         "5. Exchange Rate"
     ]
 
     result = f"The exchange rate for {source} and {destination} is {rate}."
-    return JsonResponse(result)
+    return HttpResponse(result)
 
 
 urlpatterns = [
