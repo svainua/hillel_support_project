@@ -1,4 +1,5 @@
 import csv
+import json
 import random
 import string
 
@@ -106,3 +107,28 @@ def get_poderevyanski_issue(request: HttpRequest) -> JsonResponse:
     ]
 
     return JsonResponse(data={"results": results})
+
+
+def post_issue(request: HttpRequest) -> JsonResponse:
+    post_data = json.loads(request.body)
+    # id_ = post_data.get("id")
+    # title = post_data.get("title")
+    # body = post_data.get("body")
+    # senior_id = post_data.get("senior_id")
+    # junior_id = post_data.get("junior_id")
+
+    issues = Issue.objects.create(
+        title=post_data.get("title"),
+        body=post_data.get("body"),
+        senior_id=post_data.get("senior_id"),
+        junior_id=post_data.get("junior_id"),
+    )
+
+    result = {
+        "title": issues.title,
+        "body": issues.body,
+        "senior_id": issues.senior_id,
+        "junior_id": issues.junior_id,
+    }
+
+    return JsonResponse(data=result)

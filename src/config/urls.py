@@ -6,6 +6,7 @@ from issues.api import (
     create_random_issue,
     get_issues,
     get_poderevyanski_issue,
+    post_issue,
 )
 
 urlpatterns = [
@@ -14,4 +15,5 @@ urlpatterns = [
     path("issues/create", create_random_issue),
     path("issues/oles", create_poderevyanski_issue),
     path("issues/get-oles", get_poderevyanski_issue),
+    path("issues/post-issue", post_issue),
 ]
