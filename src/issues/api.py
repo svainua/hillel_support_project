@@ -3,33 +3,90 @@ import json
 import random
 import string
 
+from django.http import Http404  # noqa
 from django.http import HttpRequest, JsonResponse
 from django.shortcuts import render  # noqa
+from django.shortcuts import get_object_or_404
+from rest_framework import serializers
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 
 from issues.models import Issue
 
-# Create your views here.
+
+class IssueSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Issue
+        # fields = ["id", "title", "body", "juniour_id"]    # выдает выборочные поля из модели    #noqa
+        # exclude = ["id"] # выдает все поля, кроме указанного
+        fields = "__all__"  # выдает все поля из модели
+
+    # def validate(self, attrs):     # attrs - значения, которые приходят к нам в виде словаря. НАПОМНИТЬ ДИМЕ,КАК РАБОТАЕТ!!!   #noqa
+    #     return attrs
 
 
-def get_issues(request: HttpRequest) -> JsonResponse:
-    # issues = Issue.objects.create()
-    # issues = Issue.objects.update()
-    # issues = Issue.objects.get()
-    # issues = Issue.objects.delete()
-    issues: list[Issue] = Issue.objects.all()
+@api_view()
+def get_issues(request) -> Response:
 
-    results: list[dict] = [
-        {
-            "id": issue.id,
-            "title": issue.title,
-            "body": issue.body,
-            "senior_id": issue.senior_id,
-            "junior_id": issue.junior_id,
-        }
-        for issue in issues
-    ]
+    issues = Issue.objects.all()
+    # results = [IssueSerializer(issue) for issue in issues]
+    results = [IssueSerializer(issue).data for issue in issues]
 
-    return JsonResponse(data={"results": results})
+    return Response(data={"results": results})
+
+    # issues = Issue.objects.all()
+
+    # results: list[dict] = [
+    #     {
+    #         "id": issue.id,
+    #         "title": issue.title,
+    #         "body": issue.body,
+    #         "senior_id": issue.senior_id,
+    #         "junior_id": issue.junior_id,
+    #     }
+    #     for issue in issues
+    # ]
+
+    # return Response(data={"results": results})
+
+
+@api_view()
+def retreive_issue(
+    request, issue_id: int
+) -> Response:  # выведение данных по значению Id в запросе в Postman
+    instance = get_object_or_404(Issue, id=issue_id)
+    # try:
+    #     instance = Issue.objects.get(id=issue_id)
+    # except Issue.DoesNotExist:     # На случай, если нет такого ID
+    #     raise Http404()
+
+    return Response(data={"results": IssueSerializer(instance).data})
+
+
+@api_view(["POST"])
+def create_issue(request) -> Response:
+    try:
+        payload: dict = json.loads(request.body)  # получаем данные из POST
+    except json.decoder.JSONDecodeError:
+        raise Exception("Request body is invalid")
+
+    # трансформируем в dict, чтобы записать в issue.
+    serializer = IssueSerializer(
+        data=payload
+    )  # пропускаем payload через валидатор
+    serializer.is_valid(
+        raise_exception=True
+    )  # освободили себя от процесса валидации данных и передали его на уровень Модели наверх в класс Мета    #noqa
+
+    issue = Issue.objects.create(
+        **serializer.validated_data
+    )  # распаковываем и записываем всё в Базу Данных
+
+    # return Response(data={})
+    # return Response(data=serializer.validated_data) # данные после валидации.
+    return Response(
+        data=IssueSerializer(issue).data
+    )  # отображает данные после записи в БД
 
 
 def _random_string(length: int = 10) -> str:
@@ -111,11 +168,6 @@ def get_poderevyanski_issue(request: HttpRequest) -> JsonResponse:
 
 def post_issue(request: HttpRequest) -> JsonResponse:
     post_data = json.loads(request.body)
-    # id_ = post_data.get("id")
-    # title = post_data.get("title")
-    # body = post_data.get("body")
-    # senior_id = post_data.get("senior_id")
-    # junior_id = post_data.get("junior_id")
 
     issues = Issue.objects.create(
         title=post_data.get("title"),

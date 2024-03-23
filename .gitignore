@@ -6,6 +6,7 @@ venv
 __pycache__
 brew.zshrc
 cls
+.vscode
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
