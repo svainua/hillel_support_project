@@ -9,7 +9,7 @@ class Issue(models.Model):
 
     junior = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="junior_issues"
-    )  # rel_name позволит потом для юзера junior получить все его связанные issues
+    )  # rel_name позволит потом для юзера junior получить все его связанные issues  #noqa
     senior = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="senior_issues", null=True
     )
@@ -26,14 +26,14 @@ class Issue(models.Model):
 # issue.status
 # issue.junior.password
 
-# #messages = Message.objects.filter(issue_id=issue.id)  вместо этого, при помощи Джанго можно прописать следующее:
+# #messages = Message.objects.filter(issue_id=issue.id)  вместо этого, при помощи Джанго можно прописать следующее:  #noqa
 # issue.message_set
 
 
 class Message(models.Model):
     body = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
-    # updated_at = models.DateTimeField(auto_now=True)  автоматич обновл на уровне СУБД,каждый раз,когда вносятся изменения в таблицу
+    # updated_at = models.DateTimeField(auto_now=True)  автоматич обновл на уровне СУБД,каждый раз,когда вносятся изменения в таблицу   #noqa
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     issue = models.ForeignKey(Issue, on_delete=models.CASCADE)
