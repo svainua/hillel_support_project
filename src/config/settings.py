@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    "rest_framework_simplejwt",
     "users",
     "issues",
 ]
@@ -138,3 +139,11 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
 #    "django.middleware.csrf.CsrfViewMiddleware",
+
+
+# Django REST_FRAMEWORK Configuration
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    )
+}

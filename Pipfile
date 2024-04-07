@@ -11,6 +11,7 @@ pandas = "*"
 djangorestframework = "~=3.15.1"
 djangorestframework-types = "*"
 psycopg = "==3.1.18"
+djangorestframework-simplejwt = "~=5.3.1"
 
 [dev-packages]
 django-stubs = "~=4.2.7"

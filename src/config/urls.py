@@ -1,5 +1,7 @@
 from django.contrib import admin
 from django.urls import path
+from rest_framework_simplejwt.views import TokenObtainPairView  # noqa
+from rest_framework_simplejwt.views import token_obtain_pair
 
 from issues.api import (
     create_issue,
@@ -20,4 +22,7 @@ urlpatterns = [
     path("issues/post-issue", post_issue),
     path("issues/create-issue", create_issue),
     path("issues/<int:issue_id>", retreive_issue),
+    # Authentication
+    path("auth/token/", token_obtain_pair),
+    # path("auth/token/", TokenObtainPairView.as_view()), #одинак с пред строк
 ]
