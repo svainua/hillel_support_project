@@ -12,6 +12,7 @@ from issues.api import (
     post_issue,
     retreive_issue,
 )
+from users.api import create_user
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -25,4 +26,5 @@ urlpatterns = [
     # Authentication
     path("auth/token/", token_obtain_pair),
     # path("auth/token/", TokenObtainPairView.as_view()), #одинак с пред строк
+    path("users/create", create_user),
 ]
