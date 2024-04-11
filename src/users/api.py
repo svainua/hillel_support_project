@@ -5,9 +5,6 @@ from django.contrib.auth import (
 )
 from django.http import HttpRequest, JsonResponse
 
-# from users.models import User или так можно импортировать Usera
-
-
 User = get_user_model()
 
 
