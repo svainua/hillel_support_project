@@ -38,6 +38,20 @@ class UserRetrieveUpdateDeleteAPI(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
     lookup_url_kwarg = "id"
 
+    def put(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(
+            instance, data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        password = request.data.get("password")
+        if password:
+            instance.set_password(password)
+            instance.save()
+
+        return JsonResponse(serializer.data)
+
 
 def create_user(request: HttpRequest) -> JsonResponse:
     if request.method != "POST":
