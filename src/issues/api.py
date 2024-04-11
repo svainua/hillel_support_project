@@ -21,9 +21,7 @@ class IssueSerializer(serializers.ModelSerializer):
         return attrs
 
 
-class IssuesAPI(
-    generics.ListCreateAPIView
-):  # Class Based Views вместо FBV (get_issue)
+class IssuesAPI(generics.ListCreateAPIView):
     http_method_names = ["get", "post"]
     serializer_class = IssueSerializer
 
