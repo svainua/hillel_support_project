@@ -2,10 +2,16 @@ from django.db import models
 
 from users.models import User
 
+ISSUE_STATUS_CHOICES = (
+    (1, "Opened"),
+    (2, "In progress"),
+    (3, "Closed"),
+)
+
 
 class Issue(models.Model):
     title = models.CharField(max_length=100)
-    status = models.PositiveSmallIntegerField()
+    status = models.PositiveSmallIntegerField(choices=ISSUE_STATUS_CHOICES)
     body = models.TextField(null=True)
 
     junior = models.ForeignKey(
@@ -17,6 +23,9 @@ class Issue(models.Model):
 
     def __repr__(self) -> str:
         return f"Issue [{self.pk} {self.title[:10]}]"
+
+    def __str__(self) -> str:
+        return self.title[:10]
 
 
 # first_issue: Issue | None = Issue.objects.first()

@@ -1,10 +1,15 @@
-import json
+import json  # noqa
 
 from django.contrib.auth import (
     get_user_model,  # импортирует класс Usera из любой директории проекта
 )
-from django.http import HttpRequest, JsonResponse
-from rest_framework import generics, serializers
+from django.contrib.auth.hashers import make_password
+from django.http import HttpRequest, JsonResponse  # noqa
+from rest_framework import generics, permissions, serializers, status
+from rest_framework.exceptions import ValidationError
+from rest_framework.response import Response
+
+from .enums import Role
 
 User = get_user_model()
 
@@ -15,65 +20,128 @@ class UserSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class UsersAPI(generics.ListCreateAPIView):
-    http_method_names = ["post"]
-    serializer_class = UserSerializer
+class UserRegistrationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["email", "password", "first_name", "last_name", "role"]
 
-    def post(self, request, *args, **kwargs):
-        data = request.data
-        serializer = self.get_serializer(data=data)
-        if serializer.is_valid():
-            user = serializer.save()
-            password = data.get("password")
-            if password:
-                user.set_password(password)
-                user.save()
-            return JsonResponse(serializer.data, status=201)
-        return JsonResponse(serializer.errors, status=400)
+    def validate_role(self, value: str) -> str:
+        if value not in Role.users():
+            raise ValidationError(
+                f"Selected Role must be in {Role.users_values()}"
+            )
+        return value
+
+    def validate(self, attrs: dict):
+        """change the password for its hash"""
+        attrs["password"] = make_password(attrs["password"])
+
+        return attrs
 
 
-class UserRetrieveUpdateDeleteAPI(generics.RetrieveUpdateDestroyAPIView):
-    http_method_names = ["get", "post", "put", "patch", "delete"]
-    serializer_class = UserSerializer
-    queryset = User.objects.all()
-    lookup_url_kwarg = "id"
+class UserRegistrationPublicSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["email", "first_name", "last_name", "role"]
 
-    def put(self, request, *args, **kwargs):
-        instance = self.get_object()
+
+class UserListCreateAPI(generics.ListCreateAPIView):
+    http_method_names = ["get", "post"]
+    serializer_class = UserRegistrationSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        return User.objects.all()
+
+    def post(self, request):
         serializer = self.get_serializer(
-            instance, data=request.data, partial=True
+            data=request.data
+        )  # получаем сериализатор
+        serializer.is_valid(raise_exception=True)  # валидируем данные
+        self.perform_create(
+            serializer
+        )  # создаем со своим сериализатором данные
+
+        return Response(
+            UserRegistrationPublicSerializer(serializer.validated_data).data,
+            status=status.HTTP_201_CREATED,
+            headers=self.get_success_headers(
+                serializer.data
+            ),  # получить заголовки успеха
         )
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-        password = request.data.get("password")
-        if password:
-            instance.set_password(password)
-            instance.save()
 
-        return JsonResponse(serializer.data)
+    def get(self, request):
+        queryset = (
+            self.get_queryset()
+        )  # возвращает всех юзеров в этот queryset
+        serializer = UserSerializer(queryset)  #
+
+        return Response(
+            serializer.data,
+            status=status.HTTP_200_OK,
+            headers=self.get_success_headers(serializer.data),
+        )
 
 
-def create_user(request: HttpRequest) -> JsonResponse:
-    if request.method != "POST":
-        raise NotImplementedError("Only POST requests")
+# class UsersAPI(generics.ListCreateAPIView):
+#     http_method_names = ["post"]
+#     serializer_class = UserSerializer
 
-    data: dict = json.loads(request.body)
-    user: User = User.objects.create_user(
-        **data
-    )  # в базе сохраняется зашифрованный пароль
-    # user: User = User.objects.create(**data)  # в базе сохраняется незашифрованный пароль  #noqa
+#     def post(self, request, *args, **kwargs):
+#         data = request.data
+#         serializer = self.get_serializer(data=data)
+#         if serializer.is_valid():
+#             user = serializer.save()
+#             password = data.get("password")
+#             if password:
+#                 user.set_password(password)
+#                 user.save()
+#             return JsonResponse(serializer.data, status=201)
+#         return JsonResponse(serializer.errors, status=400)
 
-    # user.pk = None
-    # user.save()  эти 2 строки сделают нового пользователя. пока не используем
 
-    # convert do dict
-    results = {
-        "id": user.id,
-        "email": user.email,
-        "first_name": user.first_name,
-        "last_name": user.last_name,
-        "role": user.role,
-        "is_active": user.is_active,
-    }
+# class UserRetrieveUpdateDeleteAPI(generics.RetrieveUpdateDestroyAPIView):
+#     http_method_names = ["get", "post", "put", "patch", "delete"]
+#     serializer_class = UserSerializer
+#     queryset = User.objects.all()
+#     lookup_url_kwarg = "id"
 
-    return JsonResponse(results)
+#     def put(self, request, *args, **kwargs):
+#         instance = self.get_object()
+#         serializer = self.get_serializer(
+#             instance, data=request.data, partial=True
+#         )
+#         serializer.is_valid(raise_exception=True)
+#         self.perform_update(serializer)
+#         password = request.data.get("password")
+#         if password:
+#             instance.set_password(password)
+#             instance.save()
+
+#         return JsonResponse(serializer.data)
+
+
+# def create_user(request: HttpRequest) -> JsonResponse:
+#     if request.method != "POST":
+#         raise NotImplementedError("Only POST requests")
+
+#     data: dict = json.loads(request.body)
+#     user: User = User.objects.create_user(
+#         **data
+#     )  # в базе сохраняется зашифрованный пароль
+#     # user: User = User.objects.create(**data)  # в базе сохраняется незашифрованный пароль  #noqa
+
+#     # user.pk = None
+#     # user.save()  эти 2 строки сделают нового пользователя. пока не используем  #noqa
+
+#     # convert do dict
+#     results = {
+#         "id": user.id,
+#         "email": user.email,
+#         "first_name": user.first_name,
+#         "last_name": user.last_name,
+#         "role": user.role,
+#         "is_active": user.is_active,
+#     }
+
+#     return JsonResponse(results)

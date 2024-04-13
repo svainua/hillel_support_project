@@ -26,9 +26,10 @@ class IssuesAPI(generics.ListCreateAPIView):
     serializer_class = IssueSerializer
 
     def get_queryset(self):
+        # TODO Separate for each role
         return Issue.objects.all()
 
-    def post(self, request):
+    def post(self, request):  # Прописывание permission
         if request.user.role == Role.SENIOR:
             raise Exception("The role is Senior")
         return super().post(request)
