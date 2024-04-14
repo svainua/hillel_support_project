@@ -28,18 +28,6 @@ class Issue(models.Model):
         return self.title[:10]
 
 
-# first_issue: Issue | None = Issue.objects.first()
-# instance: Issue = Issue.objects.get(id=1)
-
-# issue: Issue = Issue.objects.get(id=1)
-# issue.title
-# issue.status
-# issue.junior.password
-
-# #messages = Message.objects.filter(issue_id=issue.id)  вместо этого, при помощи Джанго можно прописать следующее:  #noqa
-# issue.message_set
-
-
 class Message(models.Model):
     body = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)

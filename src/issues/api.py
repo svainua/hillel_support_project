@@ -1,3 +1,4 @@
+from django.db.models import Q
 from rest_framework import generics, serializers
 
 from users.enums import Role
@@ -27,7 +28,17 @@ class IssuesAPI(generics.ListCreateAPIView):
 
     def get_queryset(self):
         # TODO Separate for each role
-        return Issue.objects.all()
+        user = self.request.user
+        if user.role == Role.ADMIN:
+            return Issue.objects.all()
+        elif user.role == Role.SENIOR:
+            return Issue.objects.filter(
+                Q(senior=user) | Q(senior=None)
+            )  # https://www.w3schools.com/django/django_queryset_filter.php   #noqa
+        elif user.role == Role.JUNIOR:
+            return Issue.objects.filter(junior=user)
+        else:
+            raise Exception("You don't have access to the DB")
 
     def post(self, request):  # Прописывание permission
         if request.user.role == Role.SENIOR:
@@ -40,3 +51,13 @@ class IssuesRetrieveUpdateDeleteAPI(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = IssueSerializer
     queryset = Issue.objects.all()
     lookup_url_kwarg = "id"
+
+    def delete(self, request, *args, **kwargs):
+        if request.user.role != Role.ADMIN:
+            raise Exception("Only admin can delete Issue")
+        return super().delete(request, *args, **kwargs)
+
+    def put(self, request, *args, **kwargs):
+        if request.user.role == Role.JUNIOR:
+            raise Exception("Only Admin and Senior can change issue")
+        return super().put(request, *args, **kwargs)

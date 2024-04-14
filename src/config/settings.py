@@ -148,7 +148,7 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": (
-        "rest_framework.permissions.IsAuthenticated",  # маякует если auth данные не были переданы #noqa
+        "rest_framework.permissions.IsAuthenticated",
     ),
 }
 
