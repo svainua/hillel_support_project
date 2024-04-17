@@ -97,6 +97,51 @@ class MessageSerializer(serializers.ModelSerializer):
         return super().save()
 
 
+@api_view(["PUT"])
+def issues_close(request: Request, id: int):
+    issue = Issue.objects.get(id=id)
+    if request.user.role != Role.SENIOR:
+        raise PermissionError("Only Senior can close issue")
+
+    if issue.status != Status.IN_PROGRESS:
+        return response.Response(
+            {
+                "message": "This issue is already closed or wasn't taken by the senior yet"
+            },
+            status=422,
+        )
+
+    else:
+        # issue = Issue.objects.update(id=id, status=Status.CLOSED)
+        issue.status = Status.CLOSED
+        issue.save()
+
+    serializer = IssueSerializer(issue)
+    return response.Response(serializer.data)
+
+
+@api_view(["PUT"])
+def issues_take(request: Request, id: int):
+    issue = Issue.objects.get(id=id)
+    if request.user.role != Role.SENIOR:
+        raise PermissionError("Only Senior can take an issue")
+
+    if (issue.status != Status.OPENED) or (issue.senior is not None):
+        return response.Response(
+            {"message": "Issue is not Opened or senior is set."},
+            status=422,
+        )
+
+    else:
+        issue.senior = request.user
+        issue.status = Status.IN_PROGRESS
+        issue.save()
+
+    serializer = IssueSerializer(issue)
+    return response.Response(serializer.data)
+
+
+# MESSAGES
 @api_view(["GET", "POST"])
 def messages_api_dispatcher(request: Request, issue_id: int):
     if request.method == "GET":
@@ -138,48 +183,3 @@ def messages_api_dispatcher(request: Request, issue_id: int):
         serializer.save()
 
         return response.Response(serializer.validated_data)
-
-
-# class UserRelatedToIssue(permissions.BasePermission):    # пример, как обозначить permission  #noqa
-#     def has_object_permission(self, request, view, obj):
-#         ...
-
-
-# HTTP PUT /issues/13/close
-@api_view(["PUT"])
-# @permission_classes([UserRelatedToIssue]) # относится к примеру permissions выше  #noqa
-def issues_close(request: Request, id: int):
-    issue = Issue.objects.update(id=id, status=Status.CLOSED)
-    serializer = IssueSerializer(issue)
-
-    return response.Response(serializer.data)
-
-
-@api_view(["PUT"])
-def issues_take(request: Request, id: int):
-    issue = Issue.objects.get(id=id)
-    if request.user.role != Role.SENIOR:
-        raise PermissionError("Only Senior can take an issue")
-
-    if (issue.status != Status.OPENED) or (issue.senior is not None):
-        return response.Response(
-            {"message": "Issue is not Opened or senior is set."},
-            status=422,
-        )
-
-    else:
-        issue.senior = request.user
-        issue.status = Status.IN_PROGRESS
-        issue.save()
-
-    serializer = IssueSerializer(issue)
-    return response.Response(serializer.data)
-
-
-# Old example
-# class MessageListCreateAPI(generics.ListCreateAPIView):
-#     lookup_url_kwarg = "id"
-#     serializer_class = MessageSerializer
-
-#     def get_queryset(self):
-#         return Message.objects.filter(issue__id= self.request)
