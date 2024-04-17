@@ -106,7 +106,7 @@ def issues_close(request: Request, id: int):
     if issue.status != Status.IN_PROGRESS:
         return response.Response(
             {
-                "message": "This issue is already closed or wasn't taken by the senior yet"
+                "message": "This issue is already closed or wasn't taken by the senior yet"  # noqa
             },
             status=422,
         )
