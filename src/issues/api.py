@@ -1,10 +1,12 @@
 from django.db.models import Q
-from rest_framework import generics, serializers
+from rest_framework import generics, permissions, response, serializers  # noqa
+from rest_framework.decorators import api_view, permission_classes  # noqa
+from rest_framework.request import Request
 
 from users.enums import Role
 
 from .enums import Status
-from .models import Issue
+from .models import Issue, Message
 
 
 class IssueSerializer(serializers.ModelSerializer):
@@ -26,19 +28,29 @@ class IssuesAPI(generics.ListCreateAPIView):
     http_method_names = ["get", "post"]
     serializer_class = IssueSerializer
 
+    # def get_queryset(self):
+    #     user = self.request.user
+    #     if user.role == Role.ADMIN:
+    #         return Issue.objects.all()
+    #     elif user.role == Role.SENIOR:
+    #         return Issue.objects.filter(
+    #             Q(senior=user) | Q(senior=None)
+    #         )  # https://www.w3schools.com/django/django_queryset_filter.php   #noqa
+    #     elif user.role == Role.JUNIOR:
+    #         return Issue.objects.filter(junior=user)
+    #     else:
+    #         raise Exception("You don't have access to the DB")
+
     def get_queryset(self):
-        # TODO Separate for each role
-        user = self.request.user
-        if user.role == Role.ADMIN:
-            return Issue.objects.all()
-        elif user.role == Role.SENIOR:
+        if self.request.user.role == Role.JUNIOR:
+            return Issue.objects.filter(junior=self.request.user)
+        elif self.request.user.role == Role.SENIOR:
             return Issue.objects.filter(
-                Q(senior=user) | Q(senior=None)
-            )  # https://www.w3schools.com/django/django_queryset_filter.php   #noqa
-        elif user.role == Role.JUNIOR:
-            return Issue.objects.filter(junior=user)
-        else:
-            raise Exception("You don't have access to the DB")
+                Q(senior=self.request.user)
+                | (Q(senior=None) & Q(status=Status.OPENED))
+            )
+
+        return Issue.objects.filter_by_participant(user=self.request.user)
 
     def post(self, request):  # Прописывание permission
         if request.user.role == Role.SENIOR:
@@ -61,3 +73,113 @@ class IssuesRetrieveUpdateDeleteAPI(generics.RetrieveUpdateDestroyAPIView):
         if request.user.role == Role.JUNIOR:
             raise Exception("Only Admin and Senior can change issue")
         return super().put(request, *args, **kwargs)
+
+
+class MessageSerializer(serializers.ModelSerializer):
+    user = serializers.HiddenField(
+        default=serializers.CurrentUserDefault()
+    )  # автоматич вытяг юзера из request и контекста  #noqa
+    issue = serializers.PrimaryKeyRelatedField(queryset=Issue.objects.all())
+
+    class Meta:
+        model = Message
+        fields = "__all__"
+
+    def save(self):
+        if (
+            user := self.validated_data.pop("user", None)
+        ) is not None:  # pop -вытянуть   := маржлвый оператор, создает объект в моменте самой операции  #noqa
+            self.validated_data["user_id"] = user.id
+
+        if (issue := self.validated_data.pop("issue", None)) is not None:
+            self.validated_data["issue_id"] = issue.id
+
+        return super().save()
+
+
+@api_view(["GET", "POST"])
+def messages_api_dispatcher(request: Request, issue_id: int):
+    if request.method == "GET":
+        # messages = Message.objects.filter(
+        #     Q(issue__id=issue_id,
+        #       issue__junior=request.user,
+        #       ) | Q(
+        #           issue__id=issue_id,
+        #           issue__senior=request.user)
+        #     ).order_by("timestamp")
+        messages = Message.objects.filter(
+            Q(
+                issue__id=issue_id,
+            )
+            & (
+                Q(
+                    issue__senior=request.user,
+                )
+                | Q(
+                    issue__junior=request.user,
+                )
+            )
+        ).order_by(
+            "-timestamp"
+        )  # -timestamp в постмане выводит наверх последние ссобщения #noqa
+        serializer = MessageSerializer(messages, many=True)
+
+        return response.Response(serializer.data)
+
+    else:
+        issue = Issue.objects.get(  # noqa
+            id=issue_id
+        )  # понимание, к кому привязываем наш месседж
+        payload = request.data | {"issue": issue_id}  # объединяем дату с id
+        serializer = MessageSerializer(
+            data=payload, context={"request": request}
+        )  # передаем в сериализаитор объединенную инфу  #noqa
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return response.Response(serializer.validated_data)
+
+
+# class UserRelatedToIssue(permissions.BasePermission):    # пример, как обозначить permission  #noqa
+#     def has_object_permission(self, request, view, obj):
+#         ...
+
+
+# HTTP PUT /issues/13/close
+@api_view(["PUT"])
+# @permission_classes([UserRelatedToIssue]) # относится к примеру permissions выше  #noqa
+def issues_close(request: Request, id: int):
+    issue = Issue.objects.update(id=id, status=Status.CLOSED)
+    serializer = IssueSerializer(issue)
+
+    return response.Response(serializer.data)
+
+
+@api_view(["PUT"])
+def issues_take(request: Request, id: int):
+    issue = Issue.objects.get(id=id)
+    if request.user.role != Role.SENIOR:
+        raise PermissionError("Only Senior can take an issue")
+
+    if (issue.status != Status.OPENED) or (issue.senior is not None):
+        return response.Response(
+            {"message": "Issue is not Opened or senior is set."},
+            status=422,
+        )
+
+    else:
+        issue.senior = request.user
+        issue.status = Status.IN_PROGRESS
+        issue.save()
+
+    serializer = IssueSerializer(issue)
+    return response.Response(serializer.data)
+
+
+# Old example
+# class MessageListCreateAPI(generics.ListCreateAPIView):
+#     lookup_url_kwarg = "id"
+#     serializer_class = MessageSerializer
+
+#     def get_queryset(self):
+#         return Message.objects.filter(issue__id= self.request)
