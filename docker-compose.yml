@@ -1,0 +1,23 @@
+version: "3"
+
+services:   #службы, которые будут автоматически подниматься в качестве докер-контейнеров в соответствии с теми образами, которые будут тут прописаны.
+  api:  # api, которую мы написали
+    build:  # создать контейнер
+      context: . # обозначает директорию, относительно которой будет запускаться команда билда.
+      dockerfile: Dockerfile    # специфицируем докерфайл
+
+      # придаем имя будущему образу 
+    image: hillel_support
+    container_name: hillel_support_api
+    ports:   #связываем порты
+      - "8000:8000"  # слева порт локальный, справа в контейнере
+    env_file: ".env"
+    depends_on:
+      - database
+
+  database:
+    image: "postgres:16" 
+    container_name: hillel_support_database
+    env_file: ".env"
+    ports:   #связываем порты
+      - "5432:5432"
