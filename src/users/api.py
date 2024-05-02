@@ -9,6 +9,8 @@ from rest_framework import generics, permissions, serializers, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
+from mailing.tasks import send_email
+
 from .enums import Role
 
 User = get_user_model()
@@ -61,6 +63,8 @@ class UserListCreateAPI(generics.ListCreateAPIView):
         self.perform_create(
             serializer
         )  # создаем со своим сериализатором данные
+
+        send_email.delay()
 
         return Response(
             UserRegistrationPublicSerializer(serializer.validated_data).data,
