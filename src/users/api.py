@@ -1,5 +1,5 @@
 import json  # noqa
-import uuid  #noqa
+import uuid  # noqa
 
 from django.contrib.auth import (
     get_user_model,  # импортирует класс Usera из любой директории проекта
@@ -7,14 +7,14 @@ from django.contrib.auth import (
 from django.contrib.auth.hashers import make_password
 from django.http import HttpRequest, JsonResponse  # noqa
 from rest_framework import generics, permissions, serializers, status
+from rest_framework.decorators import api_view
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
-from rest_framework.decorators import api_view
-
-#from .services import send_user_activation_email, create_activation_key
-from .services import Activator
 
 from .enums import Role
+
+# from .services import send_user_activation_email, create_activation_key
+from .services import Activator
 
 User = get_user_model()
 
@@ -67,16 +67,16 @@ class UserListCreateAPI(generics.ListCreateAPIView):
             serializer
         )  # создаем со своим сериализатором данные
 
-        #Function approach
+        # Function approach
         # activation_key: uuid.UUID = create_activation_key(email=serializer.data["email"])    #noqa
         # send_user_activation_email(email=serializer.data["email"], activation_key=activation_key)   #noqa
 
         # OOP approach
         activator_service = Activator(email=serializer.data["email"])
         activation_key = activator_service.create_activation_key()
-        activator_service.send_user_activation_email(activation_key=activation_key)
-
-
+        activator_service.send_user_activation_email(
+            activation_key=activation_key
+        )
 
         return Response(
             UserRegistrationPublicSerializer(serializer.validated_data).data,
@@ -133,15 +133,6 @@ class UserRetrieveUpdateDeleteAPI(generics.RetrieveUpdateDestroyAPIView):
 def resend_activation_mail(request) -> Response:
     breakpoint()
     pass
-
-
-
-
-
-
-
-
-
 
 
 # class UsersAPI(generics.ListCreateAPIView):

@@ -9,7 +9,11 @@ from issues.api import (
     issues_take,
     messages_api_dispatcher,
 )
-from users.api import UserListCreateAPI, UserRetrieveUpdateDeleteAPI, resend_activation_mail  #noqa
+from users.api import (  # noqa
+    UserListCreateAPI,
+    UserRetrieveUpdateDeleteAPI,
+    resend_activation_mail,
+)
 
 urlpatterns = [
     # Admin
