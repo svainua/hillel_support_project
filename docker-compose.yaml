@@ -1,4 +1,4 @@
-version: "3"
+version: '3'
 
 services:   #службы, которые будут автоматически подниматься в качестве докер-контейнеров в соответствии с теми образами, которые будут тут прописаны.
   api:  # container_id shortcut for docker compose command
@@ -26,12 +26,24 @@ services:   #службы, которые будут автоматически 
     volumes:
       - "pg_data:/var/lib/postgresql/data"   #слева, то что локально : справа то, что в контейнера
 
+  cache:
+    image: "redis:latest" 
+    container_name: hillel_support_cache
+    ports:   # port forwarding/publishing (проброска портов)
+      - "6390:6379"
 
   broker:
     image: "redis:latest" 
     container_name: hillel_support_broker
     ports:   # port forwarding/publishing (проброска портов)
-      - "6379:6379"
+      - "6379:6379"    
+
+  mailing:
+    image: "mailhog/mailhog:latest"
+    container_name: hillel_support_mailing
+    ports:
+      - "1025:1025" # перехватывает эмейлы
+      - "8025:8025" # разворачивает готовый http server для работы с перехвач. мейлами
    
 
 volumes:

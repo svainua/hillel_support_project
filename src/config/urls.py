@@ -9,13 +9,14 @@ from issues.api import (
     issues_take,
     messages_api_dispatcher,
 )
-from users.api import UserListCreateAPI, UserRetrieveUpdateDeleteAPI
+from users.api import UserListCreateAPI, UserRetrieveUpdateDeleteAPI, resend_activation_mail  #noqa
 
 urlpatterns = [
     # Admin
     path("admin/", admin.site.urls),
     # Users
     path("users/", UserListCreateAPI.as_view()),
+    path("users/activation/resendActivation", resend_activation_mail),
     path("users/<int:id>", UserRetrieveUpdateDeleteAPI.as_view()),
     # Issues
     path("issues/", IssuesAPI.as_view()),

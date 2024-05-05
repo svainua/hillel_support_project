@@ -1,4 +1,5 @@
 import json  # noqa
+import uuid  #noqa
 
 from django.contrib.auth import (
     get_user_model,  # импортирует класс Usera из любой директории проекта
@@ -8,8 +9,10 @@ from django.http import HttpRequest, JsonResponse  # noqa
 from rest_framework import generics, permissions, serializers, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
+from rest_framework.decorators import api_view
 
-from mailing.tasks import send_email
+#from .services import send_user_activation_email, create_activation_key
+from .services import Activator
 
 from .enums import Role
 
@@ -64,7 +67,16 @@ class UserListCreateAPI(generics.ListCreateAPIView):
             serializer
         )  # создаем со своим сериализатором данные
 
-        send_email.delay()
+        #Function approach
+        # activation_key: uuid.UUID = create_activation_key(email=serializer.data["email"])    #noqa
+        # send_user_activation_email(email=serializer.data["email"], activation_key=activation_key)   #noqa
+
+        # OOP approach
+        activator_service = Activator(email=serializer.data["email"])
+        activation_key = activator_service.create_activation_key()
+        activator_service.send_user_activation_email(activation_key=activation_key)
+
+
 
         return Response(
             UserRegistrationPublicSerializer(serializer.validated_data).data,
@@ -115,6 +127,21 @@ class UserRetrieveUpdateDeleteAPI(generics.RetrieveUpdateDestroyAPIView):
         if not request.user.is_staff:
             raise PermissionError("Only admin can delete another user")
         return JsonResponse(serializer.data)
+
+
+@api_view(http_method_names=["POST"])
+def resend_activation_mail(request) -> Response:
+    breakpoint()
+    pass
+
+
+
+
+
+
+
+
+
 
 
 # class UsersAPI(generics.ListCreateAPIView):
