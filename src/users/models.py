@@ -51,3 +51,8 @@ class User(AbstractBaseUser, PermissionsMixin):
             return self.get_full_name()
         else:
             return self.email
+
+
+class ActivationKey(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    key = models.CharField(max_length=100)

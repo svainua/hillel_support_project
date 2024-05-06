@@ -1,7 +1,7 @@
 import uuid
 
 # from .constants import USER_ACTIVATION_UUID_NAMESPACE   #noqa
-from .tasks import send_activation_mail
+from .tasks import send_activation_mail, send_successful_mail
 
 
 class Activator:
@@ -17,12 +17,14 @@ class Activator:
 
     def send_user_activation_email(self, activation_key: uuid.UUID):
         """Send activation email using SMTP"""
-
         activation_link = self.create_activation_link(activation_key)
-
         send_activation_mail.delay(
             recipient=self.email, activation_link=activation_link
         )  # noqa
+
+    def send_user_successful_mail(self):
+        """Send activation email using SMTP"""
+        send_successful_mail.delay(recipient=self.email)  # noqa
 
     def save_activation_information(
         self, internal_user_id: int, activation_key: uuid.UUID

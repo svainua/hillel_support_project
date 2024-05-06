@@ -13,3 +13,13 @@ def send_activation_mail(recipient: str, activation_link: uuid.UUID):
         from_email="admin@support.com",
         recipient_list=[recipient],
     )
+
+
+@celery_app.task
+def send_successful_mail(recipient: str):
+    send_mail(
+        subject="User activation completed",
+        message="Your email is sucessfully activated",
+        from_email="admin@support.com",
+        recipient_list=[recipient],
+    )

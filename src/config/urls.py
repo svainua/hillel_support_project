@@ -12,6 +12,7 @@ from issues.api import (
 from users.api import (  # noqa
     UserListCreateAPI,
     UserRetrieveUpdateDeleteAPI,
+    activate_user,
     resend_activation_mail,
 )
 
@@ -21,6 +22,7 @@ urlpatterns = [
     # Users
     path("users/", UserListCreateAPI.as_view()),
     path("users/activation/resendActivation", resend_activation_mail),
+    path("users/activate", activate_user),
     path("users/<int:id>", UserRetrieveUpdateDeleteAPI.as_view()),
     # Issues
     path("issues/", IssuesAPI.as_view()),

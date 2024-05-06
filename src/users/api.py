@@ -6,17 +6,26 @@ from django.contrib.auth import (
 )
 from django.contrib.auth.hashers import make_password
 from django.http import HttpRequest, JsonResponse  # noqa
+from django.shortcuts import get_object_or_404
 from rest_framework import generics, permissions, serializers, status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import (
+    api_view,
+    authentication_classes,
+    permission_classes,
+)
 from rest_framework.exceptions import ValidationError
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from .enums import Role
 
 # from .services import send_user_activation_email, create_activation_key
 from .services import Activator
+from .models import ActivationKey
+from .tasks import send_successful_mail
 
 User = get_user_model()
+
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -74,6 +83,11 @@ class UserListCreateAPI(generics.ListCreateAPIView):
         # OOP approach
         activator_service = Activator(email=serializer.data["email"])
         activation_key = activator_service.create_activation_key()
+
+        activation_key_obj = ActivationKey.objects.create(        #noqa
+            user=serializer.instance, key=str(activation_key)
+        )
+
         activator_service.send_user_activation_email(
             activation_key=activation_key
         )
@@ -133,6 +147,33 @@ class UserRetrieveUpdateDeleteAPI(generics.RetrieveUpdateDestroyAPIView):
 def resend_activation_mail(request) -> Response:
     breakpoint()
     pass
+
+
+@api_view(http_method_names=["POST"])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def activate_user(request) -> Response:
+    if request.method == "POST":
+        data: dict = json.loads(request.body)
+        activation_key_obj = data.get("key")
+        if activation_key_obj:
+            activation_key = get_object_or_404(
+                ActivationKey, key=activation_key_obj
+            )
+            user = activation_key.user
+            user.is_active = True
+            user.save()
+            # Activator(user.email).send_user_successful_mail()
+            send_successful_mail(recipient=user.email)
+            activation_key.delete()
+
+            return Response(
+                {"message": "Account is activated"}, status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                {"message": "The key is not active"}, status=status.HTTP_200_OK
+            )
 
 
 # class UsersAPI(generics.ListCreateAPIView):
