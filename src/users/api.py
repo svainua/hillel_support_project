@@ -18,14 +18,13 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from .enums import Role
+from .models import ActivationKey
 
 # from .services import send_user_activation_email, create_activation_key
 from .services import Activator
-from .models import ActivationKey
 from .tasks import send_successful_mail
 
 User = get_user_model()
-
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -84,7 +83,7 @@ class UserListCreateAPI(generics.ListCreateAPIView):
         activator_service = Activator(email=serializer.data["email"])
         activation_key = activator_service.create_activation_key()
 
-        activation_key_obj = ActivationKey.objects.create(        #noqa
+        activation_key_obj = ActivationKey.objects.create(  # noqa
             user=serializer.instance, key=str(activation_key)
         )
 
