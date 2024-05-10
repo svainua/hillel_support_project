@@ -19,22 +19,18 @@ from users.api import (  # noqa
 urlpatterns = [
     # Admin
     path("admin/", admin.site.urls),
-
     # Users
     path("users/", UserListCreateAPI.as_view()),
     path("users/activation/resendActivation", resend_activation_mail),
     path("users/activate", activate_user),
     path("users/<int:id>", UserRetrieveUpdateDeleteAPI.as_view()),
-
     # Issues
     path("issues/", IssuesAPI.as_view()),
     path("issues/<int:id>", IssuesRetrieveUpdateDeleteAPI.as_view()),
     path("issues/<int:id>/close", issues_close),
     path("issues/<int:id>/take", issues_take),
-
     # Messages
     path("issues/<int:issue_id>/messages", messages_api_dispatcher),
-    
     # Authentication
     path("auth/token/", token_obtain_pair),
 ]
