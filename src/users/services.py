@@ -1,5 +1,7 @@
 import uuid
 
+from shared.cache import CacheService
+
 # from .constants import USER_ACTIVATION_UUID_NAMESPACE   #noqa
 from .tasks import send_activation_mail, send_successful_mail
 
@@ -36,10 +38,15 @@ class Activator:
         # 3. Return None
         """
 
-        # create Redis connection instance
-        # save the record to the Redis with TTL of 1 day
+        cache = CacheService()
+        payload = {"user_id": internal_user_id}
 
-        raise NotImplementedError
+        cache.save(
+            namespace="activation",
+            key=str(activation_key),
+            instance=payload,
+            ttl=2_000,
+        )
 
     def validate_activation(self, activation_key: uuid.UUID):
         """Validate the activation UUID in the cache
