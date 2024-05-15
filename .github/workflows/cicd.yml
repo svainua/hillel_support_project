@@ -1,0 +1,40 @@
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"  
+  pull_request:
+    branches:
+      - main    
+
+jobs: 
+  code-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11' 
+      - name: Install dependencies
+        run: pip install black ruff isort
+      - name: Run formatters
+        run: python3 -m black --check . && python3 -m isort --check . 
+      - name: Run linter
+        run: python3 -m ruff .   
+
+  deploy-to-production:
+    needs: code-quality     
+    runs-on: ubuntu-latest  
+    if: startsWith(github.event.ref, 'refs/tags/v') 
+    steps:
+      - name: Execute remote SSH commands using KEY
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+            host: ${{ secrets.HOST }}
+            username: ${{ secrets.USERNAME }}
+            password: ${{ secrets.PASSWORD }}
+            port: ${{ secrets.PORT }}
+            script: whoami
