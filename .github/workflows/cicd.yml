@@ -38,4 +38,13 @@ jobs:
             username: ${{ secrets.SERVER_USER }}
             key: ${{ secrets.SERVER_SSH_PRIVATE_KEY }}
             script:  |
+              cd ~hillel_support_project
+              git pull
+              docker compose build
+              docker compose down
+              docker compose up -d
+
+              docker compose exec api python src/manage.py migrate
+              
+              echo "Development is successful"
 
