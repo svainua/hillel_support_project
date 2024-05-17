@@ -12,7 +12,7 @@ from issues.api import (
     issues_take,
     messages_api_dispatcher,
 )
-from users.api import (  # noqa
+from users.api import ( 
     UserListCreateAPI,
     UserRetrieveUpdateDeleteAPI,
     activate_user,
