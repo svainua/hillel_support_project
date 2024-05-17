@@ -5,9 +5,9 @@ from rest_framework.request import Request
 
 from users.enums import Role
 
+from . import openapi
 from .enums import Status
 from .models import Issue, Message
-from . import openapi
 
 
 class IssueSerializer(serializers.ModelSerializer):
@@ -23,7 +23,6 @@ class IssueSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         attrs["status"] = Status.OPENED
         return attrs
-    
 
     @openapi.schemas.user_create
     def get(self, request, *args, **kwargs):
